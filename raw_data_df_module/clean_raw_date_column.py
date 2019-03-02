@@ -48,7 +48,7 @@ def get_date_format_from_samples(S):
     """ Returns the format code for this date column.  
         If you take the date 9, 9, 1999 and sum the numbers, this should be the largest we would expect any to be: 48 """
     if S.isnull().all():
-        return S
+        return "%s is not populated" %(S.name)
     else:
         sum_of_individaul_numbers_in_date = S.dropna().map(lambda x: re.findall(r"\d", x)).map(lambda l: sum([int(n) for n in l]))
 
@@ -66,7 +66,9 @@ def change_bad_date_if_its_9999999(S, current_formated_as, max_year='2030', max_
         return S
     elif current_formated_as == 'mdY':
         S[m] = ''.join([max_month, max_date, max_year]) 
-        return 
+        return S
+    elif current_formated_as == "%s is not populated" %(S.name):
+        return S
     else:
         print('WARNING!')
    
