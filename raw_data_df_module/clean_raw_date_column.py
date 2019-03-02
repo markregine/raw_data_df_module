@@ -5,6 +5,15 @@ from dateutil.parser import parse
 import re as re
 
 
+def get_date_columns_from_df(df, strings_indicating_dates='date|dt', case=False):
+    column_names = pd.Series(df.columns)
+    m = column_names.str.contains(strings_indicating_dates, case=case)
+    date_columns = column_names[m]
+    date_columns.index.name = 'position'
+    date_columns.name = 'column_name'
+    return date_columns
+
+
 def fill_missing_date_information_with_nat(S, regex ="\s+|none", isin=[None, ''], max_date=('2030', '01', '01')):
     """Takes a dataframe and the column names that are dates and replaces 'junk' with pd.NaT """
     m1 = S.isin(isin)
@@ -16,6 +25,7 @@ def fill_missing_date_information_with_nat(S, regex ="\s+|none", isin=[None, '']
         t[i] = pd.NaT
         S = t
     return S
+
 
 def get_date_format(S):
     """ """
@@ -47,6 +57,7 @@ def get_date_format_from_samples(S):
     date_format = get_date_format(S=dates_to_test_format)
     return date_format
 
+
 def change_bad_date_if_its_9999999(S, current_formated_as, max_year='2030', max_month='01', max_date='01'):
     """"""
     m = (S == '99999999')
@@ -58,7 +69,8 @@ def change_bad_date_if_its_9999999(S, current_formated_as, max_year='2030', max_
         return 
     else:
         print('WARNING!')
-        
+   
+
 def try_to_format_date(date_text):
     """ """
     try:
@@ -74,6 +86,7 @@ def try_to_format_date(date_text):
                     return datetime.datetime.strptime(date_text, '%m/%d/%Y')
                 except ValueError:
                     print("Time to add more code to function!") 
+   
                     
 def string_date_to_datetime(S):
     s = fill_missing_date_information_with_nat(S)  
