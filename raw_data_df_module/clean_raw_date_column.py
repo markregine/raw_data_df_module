@@ -14,10 +14,10 @@ def get_date_columns_from_df(df, strings_indicating_dates='date|dt', case=False)
     return date_columns
 
 
-def fill_missing_date_information_with_nat(S, regex ="\s+|none", isin=[None, ''], max_date=('2030', '01', '01')):
+def fill_missing_date_information_with_nat(S, regex ="none", missing_dates=[None, '']):
     """Takes a dataframe and the column names that are dates and replaces 'junk' with pd.NaT """
-    m1 = S.isin(isin)
-    m2 = S.astype(str) == ''
+    m1 = S.isin(missing_dates)
+    m2 = S.astype(str).str.strip() == ''
     m3 = S.astype(str).str.strip().str.contains(regex, case=False)
 
     for i in [m1, m2, m3]:
@@ -26,71 +26,31 @@ def fill_missing_date_information_with_nat(S, regex ="\s+|none", isin=[None, '']
         S = t
     return S
 
-
-def get_date_format(S):
-    """ """
-    list_of_date_formats = S.astype(str).str.split('-').map(lambda l: ''.join([str(len(i)) for i in l])).tolist()
-    date_formats = list(set(list_of_date_formats)) ## There should only be one date format 
+def clean_dates(S, replace=[], max_date='2030-01-01'):
+    """ Add parameter replace  
+        ---------------------------
+        S: series of dates.  
+        replace: list of values to replace with the max_date.  
+        max_date: default value = '2030-01-01'.  
+    """
     try:
-        date_format = pd.Series(date_formats)[pd.Series(['Test if only one item returned, if not, raise error']).notnull()][0]
-        if date_format == '422':
-            return "Ymd"
-        elif date_format == '224':
-            return "mdY"
-        else:
-            return "Unknown date format found."
-    except:
-        print("More then one date format for a single column was found.")
-        print(date_formats)
-
-    
-def get_date_format_from_samples(S):
-    """ Returns the format code for this date column.  
-        If you take the date 9, 9, 1999 and sum the numbers, this should be the largest we would expect any to be: 48 """
-    if S.isnull().all():
-        return "%s is not populated" %(S.name)
-    else:
-        sum_of_individaul_numbers_in_date = S.dropna().map(lambda x: re.findall(r"\d", x)).map(lambda l: sum([int(n) for n in l]))
-
-    m = sum_of_individaul_numbers_in_date < 48
-    dates_to_test_format = S.dropna()[m].map(lambda i: parse(i))
-    date_format = get_date_format(S=dates_to_test_format)
-    return date_format
-
-
-def change_bad_date_if_its_9999999(S, current_formated_as, max_year='2030', max_month='01', max_date='01'):
-    """"""
-    m = (S == '99999999')
-    if current_formated_as == 'Ymd':
-        S[m] = ''.join([max_year, max_month, max_date])
-        return S
-    elif current_formated_as == 'mdY':
-        S[m] = ''.join([max_month, max_date, max_year]) 
-        return S
-    elif current_formated_as == "%s is not populated" %(S.name):
-        return S
-    else:
-        print('WARNING!')
-   
-
-def try_to_format_date(date_text):
-    """ """
-    try:
-        return datetime.datetime.strptime(date_text, '%Y-%m-%d')
+        s = pd.to_datetime(S).copy()
+        return s
     except ValueError:
         try:
-            return datetime.datetime.strptime(date_text, '%Y%m%d')
+            print('All elements could not convert to datetime objects.\n    Filling "missing" elements with NaT and trying again.')
+            s = fill_missing_date_information_with_nat(S)
+            s = pd.to_datetime(s)
+            return s
         except ValueError:
+            ## List the records that could not convert
+            errors_coerced = pd.to_datetime(s, errors='coerce')
+            if replace == []:
+                raise NameError('Here is a pd.Series of strings that would not convert to datetime objects.  Use the replace parameter.',  s[errors_coerced.isnull()])
             try:
-                return datetime.datetime.strptime(date_text, '%m-%d-%Y')
-            except ValueError:
-                try:
-                    return datetime.datetime.strptime(date_text, '%m/%d/%Y')
-                except ValueError:
-                    print("Time to add more code to function!") 
-   
-                    
-def string_date_to_datetime(S):
-    s = fill_missing_date_information_with_nat(S)  
-    s = change_bad_date_if_its_9999999(s, get_date_format_from_samples(s))
-    return pd.to_datetime(s)
+                ## List the records that could not convert
+                m = s.isin(replace)
+                s[m] = max_date
+                return pd.to_datetime(s)
+            except:
+                print("    Replaced elements in replace parameter.\n That was the LAST TRY in the program.")

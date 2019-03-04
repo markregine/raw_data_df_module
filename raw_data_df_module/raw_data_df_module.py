@@ -20,7 +20,7 @@ def strip_white_space_from_columns_of_dtype_str(df):
     """ Takes one parameter, a dataframe. """
     for i in df.select_dtypes([object]).columns:
         m = df[i].dropna().index
-        df.loc[m, i] = df.loc[m, i].str.strip()
+        df.loc[m, i] = df.loc[m, i].astype(str).str.strip()
         del m, i
     return df
 
