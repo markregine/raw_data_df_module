@@ -3,6 +3,14 @@
 import pandas as pd
 import numpy as np
 
+def search_columns(df, contains_search_regex_terms=None):
+    cols = pd.Series(df.columns)
+    if contains_search_regex_terms != None:
+        m = cols.str.contains(contains_search_regex_terms, case=False)
+        return cols[m]
+    else:
+        print("Enter a search term parameter.")
+
 def get_excel_file_object_and_list_containing_worksheet_names_from_excel_file(path):
     """  
         Takes one parameter, the path to the excel file of interest.  
@@ -19,9 +27,10 @@ def get_excel_file_object_and_list_containing_worksheet_names_from_excel_file(pa
 def strip_white_space_from_columns_of_dtype_str(df):
     """ Takes one parameter, a dataframe. """
     for i in df.select_dtypes([object]).columns:
-        m = df[i].dropna().index
-        df.loc[m, i] = df.loc[m, i].astype(str).str.strip()
-        del m, i
+        s = df[i].copy()
+        s.update(s.dropna().astype(str).str.strip())
+        df.loc[: ,i] = s.copy()
+        del i, s
     return df
 
 
